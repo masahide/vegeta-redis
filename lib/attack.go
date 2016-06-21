@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kklis/goredis"
+	redis "gopkg.in/redis.v3"
 )
 
 // Attacker is an attack executor which wraps an http.Client
 type Attacker struct {
 	//client       http.Client
-	cnn          *redis
+	cnn          *redisConn
 	stopch       chan struct{}
 	workers      uint64
 	redirects    int
@@ -159,18 +159,18 @@ func max(a, b time.Time) time.Time {
 }
 
 type redisRes struct {
-	value []byte
+	value string
 	err   error
 }
 
 type redisOp struct {
 	op     string
 	key    string
-	value  []byte
+	value  string
 	result chan redisRes
 }
 
-type redis struct {
+type redisConn struct {
 	query   chan redisOp
 	maxConn int
 	workers *redisWorker
@@ -178,14 +178,15 @@ type redis struct {
 
 type redisWorker struct {
 	query chan redisOp
-	conn  *goredis.Redis
+	conn  *redis.Client
 }
 
 func NewRedisWorker(network, addr string, query chan redisOp) (*redisWorker, error) {
-	conn, err := goredis.Dial(network, addr)
-	if err != nil {
-		return nil, err
-	}
+	conn := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 	return &redisWorker{
 		query: query,
 		conn:  conn,
@@ -196,19 +197,19 @@ func Worker(m *redisWorker) {
 	for q := range m.query {
 		switch q.op {
 		case "get":
-			v, _, err := m.conn.Get(q.key)
+			v, err := m.conn.Get(q.key).Result()
 			q.result <- redisRes{v, err}
 		case "set":
-			err := m.conn.Set(q.key, q.value, 0, 0)
+			_, err := m.conn.Set(q.key, q.value, 0).Result()
 			q.result <- redisRes{err: err}
 		}
 	}
 }
 
-func (m *redis) Query(line string) ([]byte, error) {
+func (m *redisConn) Query(line string) (string, error) {
 	str := strings.Split(line, " ")
 	var key string
-	var value []byte
+	var value string
 	op := "get"
 	if len(str) > 0 {
 		op = str[0]
@@ -217,7 +218,7 @@ func (m *redis) Query(line string) ([]byte, error) {
 		key = str[1]
 	}
 	if len(str) > 2 {
-		value = []byte(str[2])
+		value = str[2]
 	}
 	q := redisOp{
 		op:     op,
@@ -230,8 +231,8 @@ func (m *redis) Query(line string) ([]byte, error) {
 	return res.value, res.err
 }
 
-func NewRedis(network, addr string, maxConn int) (*redis, error) {
-	m := &redis{
+func NewRedis(network, addr string, maxConn int) (*redisConn, error) {
+	m := &redisConn{
 		query:   make(chan redisOp, maxConn),
 		maxConn: maxConn,
 	}

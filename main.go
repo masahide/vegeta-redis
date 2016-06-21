@@ -80,7 +80,7 @@ var Version = "???"
 
 const examples = `
 examples:
-  vegeta-redis attack -address localhost:11211 -body query.txt -duration=60s | tee results.bin | vegeta-redis report
+  vegeta-redis attack -address localhost:6379 -body query.txt -duration=60s | tee results.bin | vegeta-redis report
   vegeta-redis report -inputs=results.bin -reporter=json > metrics.json
   cat results.bin | vegeta-redis report -reporter=plot > plot.html
   cat results.bin | vegeta-redis report -reporter="hist[0,100ms,200ms,300ms]"
