@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kklis/gomemcache"
+	"github.com/kklis/goredis"
 )
 
 // Attacker is an attack executor which wraps an http.Client
 type Attacker struct {
 	//client       http.Client
-	cnn          *memcached
+	cnn          *redis
 	stopch       chan struct{}
 	workers      uint64
 	redirects    int
@@ -47,7 +47,7 @@ func NewAttacker(opts ...func(*Attacker)) *Attacker {
 		opt(a)
 	}
 	var err error
-	a.cnn, err = NewMemached(a.network, a.addr, a.maxOpenConns)
+	a.cnn, err = NewRedis(a.network, a.addr, a.maxOpenConns)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,54 +158,54 @@ func max(a, b time.Time) time.Time {
 	return b
 }
 
-type memcacheRes struct {
+type redisRes struct {
 	value []byte
 	err   error
 }
 
-type memcacheOp struct {
+type redisOp struct {
 	op     string
 	key    string
 	value  []byte
-	result chan memcacheRes
+	result chan redisRes
 }
 
-type memcached struct {
-	query   chan memcacheOp
+type redis struct {
+	query   chan redisOp
 	maxConn int
-	workers *memcacheWorker
+	workers *redisWorker
 }
 
-type memcacheWorker struct {
-	query chan memcacheOp
-	conn  *gomemcache.Memcache
+type redisWorker struct {
+	query chan redisOp
+	conn  *goredis.Redis
 }
 
-func NewMemcacheWorker(network, addr string, query chan memcacheOp) (*memcacheWorker, error) {
-	conn, err := gomemcache.Dial(network, addr)
+func NewRedisWorker(network, addr string, query chan redisOp) (*redisWorker, error) {
+	conn, err := goredis.Dial(network, addr)
 	if err != nil {
 		return nil, err
 	}
-	return &memcacheWorker{
+	return &redisWorker{
 		query: query,
 		conn:  conn,
 	}, nil
 }
 
-func Worker(m *memcacheWorker) {
+func Worker(m *redisWorker) {
 	for q := range m.query {
 		switch q.op {
 		case "get":
 			v, _, err := m.conn.Get(q.key)
-			q.result <- memcacheRes{v, err}
+			q.result <- redisRes{v, err}
 		case "set":
 			err := m.conn.Set(q.key, q.value, 0, 0)
-			q.result <- memcacheRes{err: err}
+			q.result <- redisRes{err: err}
 		}
 	}
 }
 
-func (m *memcached) Query(line string) ([]byte, error) {
+func (m *redis) Query(line string) ([]byte, error) {
 	str := strings.Split(line, " ")
 	var key string
 	var value []byte
@@ -219,24 +219,24 @@ func (m *memcached) Query(line string) ([]byte, error) {
 	if len(str) > 2 {
 		value = []byte(str[2])
 	}
-	q := memcacheOp{
+	q := redisOp{
 		op:     op,
 		key:    key,
 		value:  value,
-		result: make(chan memcacheRes, 1),
+		result: make(chan redisRes, 1),
 	}
 	m.query <- q
 	res := <-q.result
 	return res.value, res.err
 }
 
-func NewMemached(network, addr string, maxConn int) (*memcached, error) {
-	m := &memcached{
-		query:   make(chan memcacheOp, maxConn),
+func NewRedis(network, addr string, maxConn int) (*redis, error) {
+	m := &redis{
+		query:   make(chan redisOp, maxConn),
 		maxConn: maxConn,
 	}
 	for i := 0; i < maxConn; i++ {
-		worker, err := NewMemcacheWorker(network, addr, m.query)
+		worker, err := NewRedisWorker(network, addr, m.query)
 		if err != nil {
 			return nil, err
 		}

@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"strings"
 
-	vegeta "github.com/masahide/vegeta-memcached/lib"
+	vegeta "github.com/masahide/vegeta-redis/lib"
 )
 
 func reportCmd() command {

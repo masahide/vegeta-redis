@@ -1,4 +1,4 @@
-# Vegeta-memcached [![Build Status](https://secure.travis-ci.org/masahide/vegeta-memcached.png)](http://travis-ci.org/masahide/vegeta-memcached)
+# Vegeta-redisd [![Build Status](https://secure.travis-ci.org/masahide/vegeta-redisd.png)](http://travis-ci.org/masahide/vegeta-redisd)
 
 Vegeta is a versatile HTTP load testing tool built out of a need to drill
 HTTP services with a constant request rate.
@@ -8,20 +8,20 @@ It can be used both as a command line utility and a library.
 
 ## Install
 ### Pre-compiled executables
-Get them [here](http://github.com/masahide/vegeta-memcached/releases).
+Get them [here](http://github.com/masahide/vegeta-redisd/releases).
 
 ### Source
 You need go installed and `GOBIN` in your `PATH`. Once that is done, run the
 command:
 ```shell
-$ go get github.com/masahide/vegeta-memcached
-$ go install github.com/masahide/vegeta-memcached
+$ go get github.com/masahide/vegeta-redisd
+$ go install github.com/masahide/vegeta-redisd
 ```
 
 ## Usage manual
 ```shell
 
-$ ./vegeta-memcached
+$ ./vegeta-redisd
 Usage: vegeta [global flags] <command> [command flags]
 
 global flags:
@@ -69,10 +69,10 @@ attack command:
         Initial number of workers (default 10)
 
 examples:
-  vegeta-memcached attack -address localhost:11211 -body query.txt -duration=60s | tee results.bin | vegeta-memcached report
-  vegeta-memcached report -inputs=results.bin -reporter=json > metrics.json
-  cat results.bin | vegeta-memcached report -reporter=plot > plot.html
-  cat results.bin | vegeta-memcached report -reporter="hist[0,100ms,200ms,300ms]"
+  vegeta-redisd attack -address localhost:11211 -body query.txt -duration=60s | tee results.bin | vegeta-redisd report
+  vegeta-redisd report -inputs=results.bin -reporter=json > metrics.json
+  cat results.bin | vegeta-redisd report -reporter=plot > plot.html
+  cat results.bin | vegeta-redisd report -reporter="hist[0,100ms,200ms,300ms]"
 ```
 
 #### -cpus
@@ -81,7 +81,7 @@ It defaults to the amount of CPUs available in the system.
 
 ### attack
 ```shell
-Usage of vegeta-memcached attack:
+Usage of vegeta-redisd attack:
   -address string
         ip/hostname (default "localhost:11211")
   -body string
