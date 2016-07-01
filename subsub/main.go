@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -15,10 +16,11 @@ type redisWorker struct {
 }
 
 var (
-	workerNum = 1
-	chname    = "test"
-	duration  = time.Duration(1 * time.Second)
-	redisOpt  = redis.Options{
+	workerNum       = 1
+	chname          = "test"
+	chnameSerialize = false
+	duration        = time.Duration(1 * time.Second)
+	redisOpt        = redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
@@ -30,6 +32,7 @@ func main() {
 	flag.StringVar(&redisOpt.Addr, "addr", redisOpt.Addr, "redis address ")
 	flag.IntVar(&redisOpt.DB, "db", redisOpt.DB, "redis db number")
 	flag.StringVar(&chname, "n", chname, "channel name")
+	flag.BoolVar(&chnameSerialize, "s", chnameSerialize, "channel name serialize")
 	flag.IntVar(&workerNum, "w", workerNum, "worker number")
 	flag.DurationVar(&duration, "d", duration, "result duration")
 	flag.Parse()
@@ -37,11 +40,16 @@ func main() {
 	res := make(chan results, workerNum)
 
 	for i := 0; i < workerNum; i++ {
+		num := ""
+		if chnameSerialize {
+			num = fmt.Sprintf("%04d", i)
+		}
 		w := redisWorker{
 			result:  res,
-			chname:  chname,
+			chname:  chname + num,
 			Options: redisOpt,
 		}
+		log.Printf("Subscribe channel: %s", w.chname)
 		go worker(&w)
 	}
 
