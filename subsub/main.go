@@ -42,7 +42,7 @@ func main() {
 	for i := 0; i < workerNum; i++ {
 		num := ""
 		if chnameSerialize {
-			num = fmt.Sprintf("%04d", i)
+			num = fmt.Sprintf("%05d", i)
 		}
 		w := redisWorker{
 			result:  res,
