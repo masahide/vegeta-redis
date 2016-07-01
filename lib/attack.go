@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	redis "gopkg.in/redis.v3"
+	redis "gopkg.in/redis.v4"
 )
 
 // Attacker is an attack executor which wraps an http.Client
@@ -196,6 +196,10 @@ func NewRedisWorker(network, addr string, query chan redisOp) (*redisWorker, err
 func Worker(m *redisWorker) {
 	for q := range m.query {
 		switch q.op {
+
+		case "publish":
+			v, err := m.conn.Publish(q.key, q.value).Result()
+			q.result <- redisRes{fmt.Sprintf("code:%d", v), err}
 		case "get":
 			v, err := m.conn.Get(q.key).Result()
 			q.result <- redisRes{v, err}
