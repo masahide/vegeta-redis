@@ -66,7 +66,7 @@ func main() {
 			revParSec := float64(count) / (nsec / float64(time.Second))
 			byteParSec := float64(size) / (nsec / float64(time.Second))
 			errParSec := float64(errCount) / (nsec / float64(time.Second))
-			log.Printf("Subscribe/Sec: %15f, Error/sec:%15f, Byte/sec:%10d", revParSec, errParSec, int(byteParSec))
+			log.Printf("%15f Subscribe/Sec, %15f Error/sec, %10d Byte/sec", revParSec, errParSec, int(byteParSec))
 			if errCount > 0 {
 				log.Println(err)
 			}
